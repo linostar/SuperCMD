@@ -1,0 +1,41 @@
+# Xcode
+#
+# gitignore contributors: remember to keep this file simple and straightforward
+# See https://github.com/github/gitignore/blob/main/Global/Xcode.gitignore
+
+## User-specific files
+*.xcuserdatad
+*.xccheckout
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+## Build generated
+build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Swift Package Manager
+#
+# Add this line if you want to avoid sharing resolved Swift package versions with collaborators
+# .package.resolved
+.build/
+Packages/
+SourcePackages/
+
+## Local database files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+## macOS generated files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Other
+*.swp
+*~.nib
+local.xcconfig

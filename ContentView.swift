@@ -48,22 +48,21 @@ struct ContentView: View {
                 .padding()
             }
 
-            Divider()
-
             // Command List
-            List {
-                if commands.isEmpty {
-                    Text("No commands yet. Add one using the '+' button.")
-                        .foregroundColor(.secondary)
-                } else {
-                    ForEach(commands) { command in
-                        CommandRowView(command: command, onCommandChanged: loadData)
+            ScrollView {
+                VStack(spacing: 10) {
+                    if commands.isEmpty {
+                        Text("No commands yet. Add one using the '+' button.")
+                            .foregroundColor(.secondary)
+                            .padding()
+                    } else {
+                        ForEach(commands) { command in
+                            CommandRowView(command: command, onCommandChanged: loadData)
+                        }
                     }
-                }
+                }.padding(.horizontal).padding(.top, 8)
             }
             .onAppear(perform: loadData)
-            
-            Divider()
             
             // Error Banner
             if let errorMessage = dataManager.latestError {
@@ -88,7 +87,7 @@ struct ContentView: View {
             }.padding()
 
         }
-        .frame(width: 320, height: 450)
+        .frame(minWidth: 540, minHeight: 500)
     }
 
     private func loadData() {

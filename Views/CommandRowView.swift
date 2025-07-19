@@ -97,7 +97,16 @@ struct CommandRowView: View {
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.black.opacity(0.01))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.black.opacity(0.5), lineWidth: 1)
+                )
+        )
+        .padding(.top, 4)
     }
 
     private func deleteCommand() {
@@ -164,6 +173,6 @@ struct CommandRowView_Previews: PreviewProvider {
         CommandRowView(command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"), onCommandChanged: {})
             .environmentObject(DataManager.shared)
             .previewLayout(.sizeThatFits)
-            .padding()
+            .padding(.top, 4)
     }
 }

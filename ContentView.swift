@@ -2,8 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var dataManager: DataManager
+    @Environment(\.openSettings) private var openSettings
     @State private var commands: [Command] = []
-    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -12,11 +12,10 @@ struct ContentView: View {
                 Text("SuperCMD")
                     .font(.headline)
                 Spacer()
-                Button(action: { showingSettings.toggle() }) {
+                Button(action: {
+                    openSettings()
+                }) {
                     Image(systemName: "gear")
-                }
-                .sheet(isPresented: $showingSettings) {
-                    SettingsView()
                 }
             }
             .padding()

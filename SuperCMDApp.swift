@@ -13,5 +13,10 @@ struct SuperCMDApp: App {
                 .environmentObject(dataManager) // Pass the data manager to the views
         }
         .menuBarExtraStyle(.window) // Use a popover-style window for the menu.
+
+        Settings {
+            SettingsView()
+                .environmentObject(dataManager)
+        }
     }
 }

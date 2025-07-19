@@ -57,13 +57,29 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                 } else {
                     ForEach(commands) { command in
-                        CommandRowView(command: command, onCommandDeleted: loadData)
+                        CommandRowView(command: command, onCommandChanged: loadData)
                     }
                 }
             }
             .onAppear(perform: loadData)
             
             Divider()
+            
+            // Error Banner
+            if let errorMessage = dataManager.latestError {
+                HStack {
+                    Text(errorMessage)
+                        .foregroundColor(.white)
+                        .padding(8)
+                    Spacer()
+                    Button(action: { dataManager.latestError = nil }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.white)
+                    }
+                }
+                .background(Color.red)
+                .padding()
+            }
             
             // Footer
             HStack {

@@ -3,11 +3,23 @@ import SwiftUI
 struct CommandRowView: View {
     @EnvironmentObject private var dataManager: DataManager
     let command: Command
-    let onCommandDeleted: () -> Void // Callback to refresh the list
+    let onCommandChanged: () -> Void // Unified callback for delete/edit
 
     @State private var output: String = ""
     @State private var isRunning: Bool = false
     @State private var showingOutput: Bool = false
+    
+    // State for the inline edit form
+    @State private var showingEditForm = false
+    @State private var editedName: String
+    @State private var editedCommand: String
+
+    init(command: Command, onCommandChanged: @escaping () -> Void) {
+        self.command = command
+        self.onCommandChanged = onCommandChanged
+        _editedName = State(initialValue: command.name)
+        _editedCommand = State(initialValue: command.command)
+    }
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -21,6 +33,11 @@ struct CommandRowView: View {
                 }
                 Spacer()
                 
+                // Edit Button
+                Button(action: { showingEditForm.toggle() }) {
+                    Image(systemName: "pencil")
+                }
+
                 // Delete Button
                 Button(role: .destructive, action: deleteCommand) {
                     Image(systemName: "trash")
@@ -38,6 +55,27 @@ struct CommandRowView: View {
                 .disabled(isRunning)
             }
             
+            // Inline Edit Form
+            if showingEditForm {
+                VStack {
+                    Form {
+                        TextField("Name", text: $editedName)
+                        TextField("Command", text: $editedCommand)
+                    }
+                    HStack {
+                        Spacer()
+                        Button("Cancel", role: .cancel) {
+                            // Reset state and hide form
+                            editedName = command.name
+                            editedCommand = command.command
+                            showingEditForm = false
+                        }
+                        Button("Save", action: updateCommand)
+                    }
+                }
+                .padding(.top, 8)
+            }
+
             // Output Area
             if showingOutput {
                 if isRunning {
@@ -65,7 +103,16 @@ struct CommandRowView: View {
     private func deleteCommand() {
         guard let commandId = command.id else { return }
         dataManager.deleteCommand(id: commandId)
-        onCommandDeleted() // Trigger the callback
+        onCommandChanged() // Trigger the callback
+    }
+    
+    private func updateCommand() {
+        var updatedCommand = command
+        updatedCommand.name = editedName
+        updatedCommand.command = editedCommand
+        dataManager.updateCommand(updatedCommand)
+        showingEditForm = false
+        onCommandChanged() // Trigger the callback to refresh the list
     }
 
     private func runCommand() {
@@ -102,7 +149,11 @@ struct CommandRowView: View {
         do {
             try process.run()
         } catch {
-            self.output = "Failed to run command: \(error.localizedDescription)"
+            let errorMessage = "Failed to run command: \(error.localizedDescription)"
+            DispatchQueue.main.async {
+                self.dataManager.latestError = errorMessage
+                self.output = errorMessage
+            }
             self.isRunning = false
         }
     }
@@ -110,7 +161,7 @@ struct CommandRowView: View {
 
 struct CommandRowView_Previews: PreviewProvider {
     static var previews: some View {
-        CommandRowView(command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"), onCommandDeleted: {})
+        CommandRowView(command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"), onCommandChanged: {})
             .environmentObject(DataManager.shared)
             .previewLayout(.sizeThatFits)
             .padding()

@@ -5,6 +5,9 @@ import GRDB
 class DataManager: ObservableObject {
     // The shared instance of the data manager.
     static let shared = DataManager()
+    
+    // This property will hold the latest error message for the UI to display.
+    @Published var latestError: String? = nil
 
     // The database queue for writing and reading data.
     private var dbQueue: DatabaseQueue
@@ -60,7 +63,9 @@ class DataManager: ObservableObject {
                 try Command.fetchAll(db)
             }
         } catch {
-            print("Failed to fetch commands: \(error)")
+            DispatchQueue.main.async {
+                self.latestError = "Failed to fetch commands: \(error.localizedDescription)"
+            }
             return []
         }
     }
@@ -72,7 +77,9 @@ class DataManager: ObservableObject {
                 try newCommand.insert(db)
             }
         } catch {
-            print("Failed to add command: \(error)")
+            DispatchQueue.main.async {
+                self.latestError = "Failed to add command: \(error.localizedDescription)"
+            }
         }
     }
 
@@ -82,7 +89,21 @@ class DataManager: ObservableObject {
                 try Command.deleteOne(db, key: id)
             }
         } catch {
-            print("Failed to delete command: \(error)")
+            DispatchQueue.main.async {
+                self.latestError = "Failed to delete command: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func updateCommand(_ command: Command) {
+        do {
+            try dbQueue.write { db in
+                try command.update(db)
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.latestError = "Failed to update command: \(error.localizedDescription)"
+            }
         }
     }
 
@@ -95,7 +116,9 @@ class DataManager: ObservableObject {
                 try AppSettings.fetchOne(db) ?? AppSettings(id: 1, shell: "zsh")
             }
         } catch {
-            print("Failed to fetch settings: \(error)")
+            DispatchQueue.main.async {
+                self.latestError = "Failed to fetch settings: \(error.localizedDescription)"
+            }
             return AppSettings(id: 1, shell: "zsh")
         }
     }
@@ -107,7 +130,9 @@ class DataManager: ObservableObject {
                 try mutableSettings.save(db)
             }
         } catch {
-            print("Failed to save settings: \(error)")
+            DispatchQueue.main.async {
+                self.latestError = "Failed to save settings: \(error.localizedDescription)"
+            }
         }
     }
 }

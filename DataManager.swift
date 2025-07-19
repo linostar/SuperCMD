@@ -41,34 +41,73 @@ class DataManager: ObservableObject {
             
             try db.create(table: "appSettings", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("shell", .text).notNull().defaults(to: "zsh")
+                t.column("shell", .text).notNull()
+            }
+            
+            // Ensure there's a default settings row
+            if try AppSettings.fetchCount(db) == 0 {
+                var defaultSettings = AppSettings(id: 1, shell: "zsh")
+                try defaultSettings.insert(db)
             }
         }
     }
 
-    // MARK: - Command Functions (Placeholders)
+    // MARK: - Command Functions
 
     func fetchCommands() -> [Command] {
-        // Placeholder: Implement fetching commands from the database.
-        return []
+        do {
+            return try dbQueue.read { db in
+                try Command.fetchAll(db)
+            }
+        } catch {
+            print("Failed to fetch commands: \(error)")
+            return []
+        }
     }
 
     func addCommand(_ command: Command) {
-        // Placeholder: Implement adding a new command to the database.
+        do {
+            try dbQueue.write { db in
+                var newCommand = command
+                try newCommand.insert(db)
+            }
+        } catch {
+            print("Failed to add command: \(error)")
+        }
     }
 
-    func deleteCommand(_ command: Command) {
-        // Placeholder: Implement deleting a command from the database.
+    func deleteCommand(id: Int64) {
+        do {
+            _ = try dbQueue.write { db in
+                try Command.deleteOne(db, key: id)
+            }
+        } catch {
+            print("Failed to delete command: \(error)")
+        }
     }
 
-    // MARK: - Settings Functions (Placeholders)
+    // MARK: - Settings Functions
 
     func fetchSettings() -> AppSettings {
-        // Placeholder: Implement fetching settings from the database.
-        return AppSettings(shell: "zsh")
+        do {
+            return try dbQueue.read { db in
+                // There should always be exactly one settings row
+                try AppSettings.fetchOne(db) ?? AppSettings(id: 1, shell: "zsh")
+            }
+        } catch {
+            print("Failed to fetch settings: \(error)")
+            return AppSettings(id: 1, shell: "zsh")
+        }
     }
 
     func saveSettings(_ settings: AppSettings) {
-        // Placeholder: Implement saving settings to the database.
+        do {
+            try dbQueue.write { db in
+                var mutableSettings = settings
+                try mutableSettings.save(db)
+            }
+        } catch {
+            print("Failed to save settings: \(error)")
+        }
     }
 }

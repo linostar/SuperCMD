@@ -57,7 +57,7 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                 } else {
                     ForEach(commands) { command in
-                        CommandRowView(command: command)
+                        CommandRowView(command: command, onCommandDeleted: loadData)
                     }
                 }
             }

@@ -5,8 +5,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var settings: AppSettings = AppSettings(shell: "zsh")
-    @State private var newCommandName = ""
-    @State private var newCommandString = ""
     
     private let availableShells = ["zsh", "bash", "sh"]
 
@@ -20,16 +18,6 @@ struct SettingsView: View {
                         }
                     }
                 }
-
-                Section(header: Text("Add New Command")) {
-                    TextField("Command Name", text: $newCommandName)
-                    TextField("Command", text: $newCommandString)
-                    HStack {
-                        Spacer()
-                        Button("Add Command", action: addCommand)
-                            .disabled(newCommandName.isEmpty || newCommandString.isEmpty)
-                    }
-                }
             }
             
             Spacer()
@@ -41,7 +29,7 @@ struct SettingsView: View {
             }
         }
         .padding()
-        .frame(width: 400, height: 300)
+        .frame(width: 400, height: 200) // Reduced height
         .onAppear(perform: loadSettings)
     }
 
@@ -52,14 +40,6 @@ struct SettingsView: View {
     private func saveAndDismiss() {
         dataManager.saveSettings(settings)
         dismiss()
-    }
-    
-    private func addCommand() {
-        let newCommand = Command(name: newCommandName, shell: settings.shell, command: newCommandString)
-        dataManager.addCommand(newCommand)
-        // In a real app, you would update the commands list here or via a binding.
-        newCommandName = ""
-        newCommandString = ""
     }
 }
 

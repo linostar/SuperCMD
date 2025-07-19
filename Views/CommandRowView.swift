@@ -3,6 +3,7 @@ import SwiftUI
 struct CommandRowView: View {
     @EnvironmentObject private var dataManager: DataManager
     let command: Command
+    @Binding var confirmingDeleteCommandId: Int64?
     let onCommandChanged: () -> Void // Unified callback for delete/edit
 
     @State private var output: String = ""
@@ -13,9 +14,14 @@ struct CommandRowView: View {
     @State private var showingEditForm = false
     @State private var editedName: String
     @State private var editedCommand: String
+    
+    private var isConfirmingDelete: Bool {
+        confirmingDeleteCommandId == command.id
+    }
 
-    init(command: Command, onCommandChanged: @escaping () -> Void) {
+    init(command: Command, confirmingDeleteCommandId: Binding<Int64?>, onCommandChanged: @escaping () -> Void) {
         self.command = command
+        self._confirmingDeleteCommandId = confirmingDeleteCommandId
         self.onCommandChanged = onCommandChanged
         _editedName = State(initialValue: command.name)
         _editedCommand = State(initialValue: command.command)
@@ -34,17 +40,23 @@ struct CommandRowView: View {
                 Spacer()
                 
                 // Edit Button
-                Button(action: { showingEditForm.toggle() }) {
+                Button(action: {
+                    confirmingDeleteCommandId = nil // Reset confirmation on any action
+                    showingEditForm.toggle()
+                }) {
                     Image(systemName: "pencil")
                 }
 
                 // Delete Button
-                Button(role: .destructive, action: deleteCommand) {
+                Button(role: .destructive, action: handleDeleteTap) {
                     Image(systemName: "trash")
                 }
+                .background(isConfirmingDelete ? Color.black.opacity(0.18) : Color.clear)
+                .cornerRadius(4)
                 
                 // Run Button
                 Button(action: {
+                    confirmingDeleteCommandId = nil // Reset confirmation on any action
                     showingOutput.toggle()
                     if showingOutput {
                         runCommand()
@@ -109,10 +121,16 @@ struct CommandRowView: View {
         .padding(.top, 4)
     }
 
-    private func deleteCommand() {
-        guard let commandId = command.id else { return }
-        dataManager.deleteCommand(id: commandId)
-        onCommandChanged() // Trigger the callback
+    private func handleDeleteTap() {
+        if isConfirmingDelete {
+            // This is the second click, perform deletion
+            guard let commandId = command.id else { return }
+            dataManager.deleteCommand(id: commandId)
+            onCommandChanged()
+        } else {
+            // This is the first click, set for confirmation
+            confirmingDeleteCommandId = command.id
+        }
     }
     
     private func updateCommand() {
@@ -170,9 +188,13 @@ struct CommandRowView: View {
 
 struct CommandRowView_Previews: PreviewProvider {
     static var previews: some View {
-        CommandRowView(command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"), onCommandChanged: {})
-            .environmentObject(DataManager.shared)
-            .previewLayout(.sizeThatFits)
-            .padding(.top, 4)
+        CommandRowView(
+            command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"),
+            confirmingDeleteCommandId: .constant(nil),
+            onCommandChanged: {}
+        )
+        .environmentObject(DataManager.shared)
+        .previewLayout(.sizeThatFits)
+        .padding(.top, 4)
     }
 }

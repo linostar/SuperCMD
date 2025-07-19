@@ -10,6 +10,9 @@ struct ContentView: View {
     @State private var newCommandName = ""
     @State private var newCommandString = ""
     @State private var settings: AppSettings = AppSettings(shell: "zsh")
+    
+    // State to track which command is awaiting delete confirmation
+    @State private var confirmingDeleteCommandId: Int64? = nil
 
 
     var body: some View {
@@ -19,10 +22,16 @@ struct ContentView: View {
                 Text("SuperCMD")
                     .font(.headline)
                 Spacer()
-                Button(action: { showingAddCommandForm.toggle() }) {
+                Button(action: {
+                    confirmingDeleteCommandId = nil // Reset confirmation on any action
+                    showingAddCommandForm.toggle()
+                }) {
                     Image(systemName: "plus")
                 }
-                Button(action: { openSettings() }) {
+                Button(action: {
+                    confirmingDeleteCommandId = nil // Reset confirmation on any action
+                    openSettings()
+                }) {
                     Image(systemName: "gear")
                 }
             }
@@ -57,7 +66,11 @@ struct ContentView: View {
                             .padding()
                     } else {
                         ForEach(commands) { command in
-                            CommandRowView(command: command, onCommandChanged: loadData)
+                            CommandRowView(
+                                command: command,
+                                confirmingDeleteCommandId: $confirmingDeleteCommandId,
+                                onCommandChanged: loadData
+                            )
                         }
                     }
                 }.padding(.horizontal).padding(.top, 8)

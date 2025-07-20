@@ -26,10 +26,15 @@ struct ContentView: View {
                     confirmingDeleteCommandId = nil // Reset confirmation on any action
                     showingAddCommandForm.toggle()
                 }) {
-                    Image(systemName: "plus")
+                    Text("Add command")
                 }
                 .buttonStyle(PlainButtonStyle())
                 .foregroundColor(.green)
+                .padding(4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.green, lineWidth: 1)
+                )
                 Button(action: {
                     confirmingDeleteCommandId = nil // Reset confirmation on any action
                     openSettings()
@@ -38,6 +43,11 @@ struct ContentView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .foregroundColor(.green)
+                .padding(3)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.green, lineWidth: 1)
+                )
             }
             .padding()
 

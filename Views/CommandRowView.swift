@@ -3,6 +3,7 @@ import SwiftUI
 struct CommandRowView: View {
     @EnvironmentObject private var dataManager: DataManager
     let command: Command
+    let settings: AppSettings
     @Binding var confirmingDeleteCommandId: Int64?
     let onCommandChanged: () -> Void // Unified callback for delete/edit
 
@@ -19,8 +20,9 @@ struct CommandRowView: View {
         confirmingDeleteCommandId == command.id
     }
 
-    init(command: Command, confirmingDeleteCommandId: Binding<Int64?>, onCommandChanged: @escaping () -> Void) {
+    init(command: Command, settings: AppSettings, confirmingDeleteCommandId: Binding<Int64?>, onCommandChanged: @escaping () -> Void) {
         self.command = command
+        self.settings = settings
         self._confirmingDeleteCommandId = confirmingDeleteCommandId
         self.onCommandChanged = onCommandChanged
         _editedName = State(initialValue: command.name)
@@ -181,7 +183,7 @@ struct CommandRowView: View {
         let process = Process()
         let outputPipe = Pipe()
         
-        process.executableURL = URL(fileURLWithPath: "/bin/\(command.shell)")
+        process.executableURL = URL(fileURLWithPath: "/bin/\(settings.shell)")
         process.arguments = ["-c", command.command]
         process.standardOutput = outputPipe
         process.standardError = outputPipe
@@ -221,7 +223,8 @@ struct CommandRowView: View {
 struct CommandRowView_Previews: PreviewProvider {
     static var previews: some View {
         CommandRowView(
-            command: Command(id: 1, name: "List Files", shell: "zsh", command: "ls -l"),
+            command: Command(id: 1, name: "List Files", command: "ls -l"),
+            settings: AppSettings(shell: "zsh"),
             confirmingDeleteCommandId: .constant(nil),
             onCommandChanged: {}
         )

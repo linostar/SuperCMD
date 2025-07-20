@@ -22,6 +22,7 @@ class DataManager: ObservableObject {
             
             // Create the database file in the app's directory.
             let dbURL = appDirectoryURL.appendingPathComponent("supercmd.sqlite")
+            print("Database path is: \(dbURL.path)")
             dbQueue = try DatabaseQueue(path: dbURL.path)
             
             // Create the necessary tables in the database.
@@ -38,7 +39,6 @@ class DataManager: ObservableObject {
             try db.create(table: "command", ifNotExists: true) { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("name", .text).notNull()
-                t.column("shell", .text).notNull()
                 t.column("command", .text).notNull()
             }
             
@@ -82,6 +82,8 @@ class DataManager: ObservableObject {
             }
         }
     }
+
+    
 
     func deleteCommand(id: Int64) {
         do {

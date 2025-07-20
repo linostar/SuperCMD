@@ -5,7 +5,6 @@ import GRDB
 struct Command: Codable, Identifiable, Equatable {
     var id: Int64?
     var name: String
-    var shell: String
     var command: String
 }
 

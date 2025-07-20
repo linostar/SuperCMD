@@ -107,6 +107,7 @@ struct ContentView: View {
                         ForEach(commands) { command in
                             CommandRowView(
                                 command: command,
+                                settings: settings,
                                 confirmingDeleteCommandId: $confirmingDeleteCommandId,
                                 onCommandChanged: loadData
                             )
@@ -158,7 +159,7 @@ struct ContentView: View {
     }
     
     private func addCommand() {
-        let newCommand = Command(name: newCommandName, shell: settings.shell, command: newCommandString)
+        let newCommand = Command(name: newCommandName, command: newCommandString)
         dataManager.addCommand(newCommand)
         
         // Reset form and hide it

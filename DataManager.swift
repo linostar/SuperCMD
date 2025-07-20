@@ -22,7 +22,6 @@ class DataManager: ObservableObject {
             
             // Create the database file in the app's directory.
             let dbURL = appDirectoryURL.appendingPathComponent("supercmd.sqlite")
-            print("Database path is: \(dbURL.path)")
             dbQueue = try DatabaseQueue(path: dbURL.path)
             
             // Create the necessary tables in the database.

@@ -54,6 +54,9 @@ struct SettingsView: View {
         .padding()
         .frame(width: 400, height: 200) // Reduced height
         .onAppear(perform: loadSettings)
+        .background(WindowAccessor(callback: { window in
+            window?.level = .floating
+        }))
         .background(Color.clear)
         .foregroundColor(.black.opacity(0.7))
     }
@@ -72,5 +75,23 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environmentObject(DataManager.shared)
+    }
+}
+
+struct WindowAccessor: NSViewRepresentable {
+    let callback: (NSWindow?) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.callback(view.window)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            self.callback(nsView.window)
+        }
     }
 }

@@ -35,7 +35,7 @@ struct CommandRowView: View {
                         .font(.headline)
                     Text(command.command)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.green.opacity(0.8))
                 }
                 Spacer()
                 
@@ -46,12 +46,17 @@ struct CommandRowView: View {
                 }) {
                     Image(systemName: "pencil")
                 }
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
+
 
                 // Delete Button
                 Button(role: .destructive, action: handleDeleteTap) {
                     Image(systemName: "trash")
                 }
-                .background(isConfirmingDelete ? Color.black.opacity(0.18) : Color.clear)
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
+                .background(isConfirmingDelete ? Color.green.opacity(0.2) : Color.clear)
                 .cornerRadius(4)
                 
                 // Run Button
@@ -64,6 +69,8 @@ struct CommandRowView: View {
                 }) {
                     Image(systemName: showingOutput ? "chevron.down.circle.fill" : "play.fill")
                 }
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
                 .disabled(isRunning)
             }
             
@@ -72,8 +79,17 @@ struct CommandRowView: View {
                 VStack {
                     Form {
                         TextField("Name", text: $editedName)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(4)
+                            .background(Color.black.opacity(0.7))
+                            .border(Color.green, width: 1)
                         TextField("Command", text: $editedCommand)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(4)
+                            .background(Color.black.opacity(0.7))
+                            .border(Color.green, width: 1)
                     }
+                    .background(Color.clear)
                     HStack {
                         Spacer()
                         Button("Cancel", role: .cancel) {
@@ -82,7 +98,23 @@ struct CommandRowView: View {
                             editedCommand = command.command
                             showingEditForm = false
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(Color.green, lineWidth: 1)
+                        )
                         Button("Save", action: updateCommand)
+                            .buttonStyle(PlainButtonStyle())
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
                     }
                 }
                 .padding(.top, 8)
@@ -104,7 +136,7 @@ struct CommandRowView: View {
                     }
                     .frame(maxHeight: 150)
                     .padding(8)
-                    .background(Color.black.opacity(0.2))
+                    .background(Color.black.opacity(0.8))
                     .cornerRadius(8)
                 }
             }
@@ -112,10 +144,10 @@ struct CommandRowView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.01))
+                .fill(Color.black.opacity(0.7))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.black.opacity(0.5), lineWidth: 1)
+                        .stroke(Color.green, lineWidth: 1)
                 )
         )
         .padding(.top, 4)

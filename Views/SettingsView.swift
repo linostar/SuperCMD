@@ -10,27 +10,52 @@ struct SettingsView: View {
 
     var body: some View {
         VStack {
+            HStack {
+                Text("General Settings").foregroundColor(.black).font(.headline)
+                Spacer()
+            }
             Form {
-                Section(header: Text("General Settings")) {
-                    Picker("Default Shell:", selection: $settings.shell) {
-                        ForEach(availableShells, id: \.self) { shell in
-                            Text(shell).tag(shell)
-                        }
+                Picker("Default Shell:", selection: $settings.shell) {
+                    ForEach(availableShells, id: \.self) { shell in
+                        Text(shell).tag(shell)
                     }
                 }
+                .pickerStyle(SegmentedPickerStyle())
+                .background(Color.clear)
+                .foregroundColor(.black)
+                .padding(.top, 8)
             }
-            
+            .background(Color.clear)
+
             Spacer()
             
             HStack {
                 Button("Cancel", role: .cancel, action: { dismiss() })
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.gray, lineWidth: 1)
+                    )
                 Spacer()
                 Button("Save", action: saveAndDismiss)
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.gray, lineWidth: 1)
+                    )
             }
         }
         .padding()
         .frame(width: 400, height: 200) // Reduced height
         .onAppear(perform: loadSettings)
+        .background(Color.clear)
+        .foregroundColor(.black.opacity(0.7))
     }
 
     private func loadSettings() {

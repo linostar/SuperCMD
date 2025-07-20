@@ -28,30 +28,59 @@ struct ContentView: View {
                 }) {
                     Image(systemName: "plus")
                 }
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
                 Button(action: {
                     confirmingDeleteCommandId = nil // Reset confirmation on any action
                     openSettings()
                 }) {
                     Image(systemName: "gear")
                 }
+                .buttonStyle(PlainButtonStyle())
+                .foregroundColor(.green)
             }
             .padding()
-            .background(Color(NSColor.windowBackgroundColor))
-            
+
             // Add Command Form
             if showingAddCommandForm {
                 VStack {
                     Form {
                         TextField("Command Name", text: $newCommandName)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(4)
+                            .background(Color.black.opacity(0.7))
+                            .border(Color.green, width: 1)
                         TextField("Command", text: $newCommandString)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(4)
+                            .background(Color.black.opacity(0.7))
+                            .border(Color.green, width: 1)
                     }
+                    .background(Color.clear)
                     HStack {
                         Spacer()
                         Button("Cancel", role: .cancel) {
                             showingAddCommandForm = false
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(Color.green, lineWidth: 1)
+                        )
+
                         Button("Add", action: addCommand)
                             .disabled(newCommandName.isEmpty || newCommandString.isEmpty)
+                            .buttonStyle(PlainButtonStyle())
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
                     }
                 }
                 .padding()
@@ -62,7 +91,7 @@ struct ContentView: View {
                 VStack(spacing: 10) {
                     if commands.isEmpty {
                         Text("No commands yet. Add one using the '+' button.")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.green)
                             .padding()
                     } else {
                         ForEach(commands) { command in
@@ -96,10 +125,20 @@ struct ContentView: View {
             // Footer
             HStack {
                 Button("Quit", action: { NSApplication.shared.terminate(nil) })
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.green, lineWidth: 1)
+                    )
                 Spacer()
             }.padding()
 
         }
+        .foregroundColor(.green)
+        .background(Color.black.opacity(0.7).edgesIgnoringSafeArea(.all))
         .frame(minWidth: 540, minHeight: 500)
     }
 

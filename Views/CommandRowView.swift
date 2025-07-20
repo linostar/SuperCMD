@@ -57,8 +57,8 @@ struct CommandRowView: View {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(.green)
-                .background(isConfirmingDelete ? Color.green.opacity(0.2) : Color.clear)
+                .foregroundColor(isConfirmingDelete ? Color.black : Color.green)
+                .background(isConfirmingDelete ? Color.green : Color.clear)
                 .cornerRadius(4)
                 
                 // Run Button
@@ -79,19 +79,30 @@ struct CommandRowView: View {
             // Inline Edit Form
             if showingEditForm {
                 VStack {
-                    Form {
-                        TextField("Name", text: $editedName)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Command name")
+                            .font(.caption)
+                        TextField("", text: $editedName)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(4)
-                            .background(Color.black.opacity(0.7))
-                            .border(Color.green, width: 1)
-                        TextField("Command", text: $editedCommand)
+                            .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
+                        
+                        Text("Command")
+                            .font(.caption)
+                        TextField("", text: $editedCommand)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(4)
-                            .background(Color.black.opacity(0.7))
-                            .border(Color.green, width: 1)
+                            .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
+                            .padding(.bottom, 8)
                     }
-                    .background(Color.clear)
                     HStack {
                         Spacer()
                         Button("Cancel", role: .cancel) {

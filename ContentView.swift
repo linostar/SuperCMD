@@ -54,19 +54,30 @@ struct ContentView: View {
             // Add Command Form
             if showingAddCommandForm {
                 VStack {
-                    Form {
-                        TextField("Command Name", text: $newCommandName)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Command name")
+                            .font(.caption)
+                        TextField("", text: $newCommandName)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(4)
-                            .background(Color.black.opacity(0.7))
-                            .border(Color.green, width: 1)
-                        TextField("Command", text: $newCommandString)
+                            .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
+                        
+                        Text("Command")
+                            .font(.caption)
+                        TextField("", text: $newCommandString)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(4)
-                            .background(Color.black.opacity(0.7))
-                            .border(Color.green, width: 1)
+                            .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.green, lineWidth: 1)
+                            )
+                            .padding(.bottom, 8)
                     }
-                    .background(Color.clear)
                     HStack {
                         Spacer()
                         Button("Cancel", role: .cancel) {
@@ -150,7 +161,10 @@ struct ContentView: View {
         }
         .foregroundColor(.green)
         .background(Color.black.opacity(0.7).edgesIgnoringSafeArea(.all))
-        .frame(minWidth: 540, minHeight: 500)
+        .frame(minWidth: 540, minHeight: 520)
+        .onTapGesture {
+            confirmingDeleteCommandId = nil
+        }
     }
 
     private func loadData() {

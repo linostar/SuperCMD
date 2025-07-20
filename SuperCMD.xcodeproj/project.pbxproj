@@ -60,6 +60,7 @@
 		94BB413C2E2BF21F0053932C /* CommandRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRowView.swift; sourceTree = "<group>"; };
 		94BB413D2E2BF21F0053932C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		94BB41452E2BF2B00053932C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		94BB414C2E2D00040053932C /* SuperCMD.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SuperCMD.entitlements; sourceTree = "<group>"; };
 		94D62DC92E2BEF9300ADBE0E /* SuperCMD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SuperCMD.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D62DD72E2BEF9400ADBE0E /* SuperCMDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SuperCMDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		94D62DE12E2BEF9400ADBE0E /* SuperCMDUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SuperCMDUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -125,6 +126,7 @@
 		94D62DC02E2BEF9300ADBE0E = {
 			isa = PBXGroup;
 			children = (
+				94BB414C2E2D00040053932C /* SuperCMD.entitlements */,
 				94D62DDA2E2BEF9400ADBE0E /* SuperCMDTests */,
 				94D62DE42E2BEF9400ADBE0E /* SuperCMDUITests */,
 				94D62DCA2E2BEF9300ADBE0E /* Products */,
@@ -476,8 +478,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = "";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = SuperCMD.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -508,8 +510,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = "";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_ENTITLEMENTS = SuperCMD.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;

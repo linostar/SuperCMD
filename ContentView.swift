@@ -111,7 +111,7 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 10) {
                     if commands.isEmpty {
-                        Text("No commands yet. Add one using the '+' button.")
+                        Text("No commands yet. Add one using the 'Add command' button.")
                             .foregroundColor(.green)
                             .padding()
                     } else {

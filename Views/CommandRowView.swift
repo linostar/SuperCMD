@@ -42,7 +42,7 @@ struct CommandRowView: View {
                         .font(.headline)
                     Text(command.command)
                         .font(.caption)
-                        .foregroundColor(.green.opacity(0.8))
+                        .foregroundColor(.terminalGreen.opacity(0.8))
                 }
                 Spacer()
                 
@@ -54,7 +54,7 @@ struct CommandRowView: View {
                     Image(systemName: "pencil")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(.green)
+                .foregroundColor(.terminalGreen)
 
 
                 // Delete Button
@@ -62,8 +62,8 @@ struct CommandRowView: View {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(isConfirmingDelete ? Color.black : Color.green)
-                .background(isConfirmingDelete ? Color.green : Color.clear)
+                .foregroundColor(isConfirmingDelete ? Color.black : Color.terminalGreen)
+                .background(isConfirmingDelete ? Color.terminalGreen : Color.clear)
                 .cornerRadius(4)
 
                 // Run / Stop Button
@@ -79,7 +79,7 @@ struct CommandRowView: View {
                     Image(systemName: isRunning ? "stop.fill" : "play.fill")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(.green)
+                .foregroundColor(.terminalGreen)
                 .accessibilityLabel(isRunning ? "Stop \(command.name)" : "Run \(command.name)")
 
                 // Collapse Output Button
@@ -91,7 +91,7 @@ struct CommandRowView: View {
                         Image(systemName: "chevron.down.circle.fill")
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.green)
+                    .foregroundColor(.terminalGreen)
                     .accessibilityLabel("Hide output")
                 }
             }
@@ -108,7 +108,7 @@ struct CommandRowView: View {
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                         
                         Text("Command")
@@ -119,7 +119,7 @@ struct CommandRowView: View {
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                             .padding(.bottom, 8)
                     }
@@ -132,21 +132,21 @@ struct CommandRowView: View {
                             showingEditForm = false
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .foregroundColor(.green)
+                        .foregroundColor(.terminalGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .overlay(
                             RoundedRectangle(cornerRadius: 5)
-                                .stroke(Color.green, lineWidth: 1)
+                                .stroke(Color.terminalGreen, lineWidth: 1)
                         )
                         Button("Save", action: updateCommand)
                             .buttonStyle(PlainButtonStyle())
-                            .foregroundColor(.green)
+                            .foregroundColor(.terminalGreen)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                     }
                 }
@@ -180,7 +180,7 @@ struct CommandRowView: View {
                 .fill(Color.black.opacity(0.7))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.green, lineWidth: 1)
+                        .stroke(Color.terminalGreen, lineWidth: 1)
                 )
         )
         .padding(.top, 4)

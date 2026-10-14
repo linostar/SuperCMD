@@ -29,11 +29,11 @@ struct ContentView: View {
                     Text("Add command")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(.green)
+                .foregroundColor(.terminalGreen)
                 .padding(4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color.green, lineWidth: 1)
+                        .stroke(Color.terminalGreen, lineWidth: 1)
                 )
                 Button(action: {
                     confirmingDeleteCommandId = nil // Reset confirmation on any action
@@ -42,11 +42,11 @@ struct ContentView: View {
                     Image(systemName: "gear")
                 }
                 .buttonStyle(PlainButtonStyle())
-                .foregroundColor(.green)
+                .foregroundColor(.terminalGreen)
                 .padding(3)
                 .overlay(
                     RoundedRectangle(cornerRadius: 5)
-                        .stroke(Color.green, lineWidth: 1)
+                        .stroke(Color.terminalGreen, lineWidth: 1)
                 )
             }
             .padding()
@@ -63,7 +63,7 @@ struct ContentView: View {
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                         
                         Text("Command")
@@ -74,7 +74,7 @@ struct ContentView: View {
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                             .padding(.bottom, 8)
                     }
@@ -84,23 +84,23 @@ struct ContentView: View {
                             showingAddCommandForm = false
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .foregroundColor(.green)
+                        .foregroundColor(.terminalGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
                         .overlay(
                             RoundedRectangle(cornerRadius: 5)
-                                .stroke(Color.green, lineWidth: 1)
+                                .stroke(Color.terminalGreen, lineWidth: 1)
                         )
 
                         Button("Add", action: addCommand)
                             .disabled(newCommandName.isEmpty || newCommandString.isEmpty)
                             .buttonStyle(PlainButtonStyle())
-                            .foregroundColor(.green)
+                            .foregroundColor(.terminalGreen)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 5)
-                                    .stroke(Color.green, lineWidth: 1)
+                                    .stroke(Color.terminalGreen, lineWidth: 1)
                             )
                     }
                 }
@@ -112,7 +112,7 @@ struct ContentView: View {
                 VStack(spacing: 10) {
                     if commands.isEmpty {
                         Text("No commands yet. Add one using the 'Add command' button.")
-                            .foregroundColor(.green)
+                            .foregroundColor(.terminalGreen)
                             .padding()
                     } else {
                         ForEach(commands) { command in
@@ -148,19 +148,19 @@ struct ContentView: View {
             HStack {
                 Button("Quit", action: { NSApplication.shared.terminate(nil) })
                     .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.green)
+                    .foregroundColor(.terminalGreen)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .overlay(
                         RoundedRectangle(cornerRadius: 5)
-                            .stroke(Color.green, lineWidth: 1)
+                            .stroke(Color.terminalGreen, lineWidth: 1)
                     )
                 Spacer()
             }.padding()
 
         }
-        .foregroundColor(.green)
-        .background(Color.black.opacity(0.7).edgesIgnoringSafeArea(.all))
+        .foregroundColor(.terminalGreen)
+        .background(Color.panelBackground.edgesIgnoringSafeArea(.all))
         .frame(minWidth: 540, minHeight: 520)
         .onTapGesture {
             confirmingDeleteCommandId = nil
@@ -191,4 +191,11 @@ struct ContentView_Previews: PreviewProvider {
         ContentView()
             .environmentObject(DataManager.shared)
     }
+}
+
+// Fixed colors so the look doesn't depend on the SDK: system colors and translucent
+// backgrounds render darker / as glass when built with the macOS 26+ SDK.
+extension Color {
+    static let terminalGreen = Color(red: 0x25 / 255, green: 0xC6 / 255, blue: 0x5F / 255)
+    static let panelBackground = Color(red: 0x37 / 255, green: 0x38 / 255, blue: 0x3B / 255)
 }

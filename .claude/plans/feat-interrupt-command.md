@@ -32,5 +32,7 @@ All changes live in Views/CommandRowView.swift. Foundation's Process cannot plac
 - Stop hard-coding the shell path as /bin/<shell> — separate fix from the earlier review.
 - Edit form allows saving empty fields — separate fix from the earlier review.
 - Kill running commands when the menu window closes or the app quits.
+- A process that leaves the group (setsid/daemon) but keeps the output pipe open leaves the row "running"; Stop cannot reach it. Needs a separate "detach" path.
+- Pin GRDB to a version range instead of branch = master (forces a full-history clone and floats on upstream changes).
 
 Last revised: 2026-10-14

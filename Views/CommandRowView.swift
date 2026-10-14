@@ -10,7 +10,12 @@ struct CommandRowView: View {
     @State private var output: String = ""
     @State private var isRunning: Bool = false
     @State private var showingOutput: Bool = false
-    
+    // Pid of the running shell; also its process group id (spawned with POSIX_SPAWN_SETPGROUP)
+    @State private var runningPid: pid_t? = nil
+    @State private var wasInterrupted: Bool = false
+    // Completes once the shell is reaped and its output is drained
+    @State private var runFinished: DispatchGroup? = nil
+
     // State for the inline edit form
     @State private var showingEditForm = false
     @State private var editedName: String
@@ -60,20 +65,35 @@ struct CommandRowView: View {
                 .foregroundColor(isConfirmingDelete ? Color.black : Color.green)
                 .background(isConfirmingDelete ? Color.green : Color.clear)
                 .cornerRadius(4)
-                
-                // Run Button
+
+                // Run / Stop Button
                 Button(action: {
                     confirmingDeleteCommandId = nil // Reset confirmation on any action
-                    showingOutput.toggle()
-                    if showingOutput {
+                    if isRunning {
+                        stopCommand()
+                    } else {
+                        showingOutput = true
                         runCommand()
                     }
                 }) {
-                    Image(systemName: showingOutput ? "chevron.down.circle.fill" : "play.fill")
+                    Image(systemName: isRunning ? "stop.fill" : "play.fill")
                 }
                 .buttonStyle(PlainButtonStyle())
                 .foregroundColor(.green)
-                .disabled(isRunning)
+                .accessibilityLabel(isRunning ? "Stop \(command.name)" : "Run \(command.name)")
+
+                // Collapse Output Button
+                if showingOutput && !isRunning {
+                    Button(action: {
+                        confirmingDeleteCommandId = nil // Reset confirmation on any action
+                        showingOutput = false
+                    }) {
+                        Image(systemName: "chevron.down.circle.fill")
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.green)
+                    .accessibilityLabel("Hide output")
+                }
             }
             
             // Inline Edit Form
@@ -170,6 +190,9 @@ struct CommandRowView: View {
         if isConfirmingDelete {
             // This is the second click, perform deletion
             guard let commandId = command.id else { return }
+            if isRunning {
+                stopCommand()
+            }
             dataManager.deleteCommand(id: commandId)
             onCommandChanged()
         } else {
@@ -188,45 +211,198 @@ struct CommandRowView: View {
     }
 
     private func runCommand() {
-        isRunning = true
         output = ""
-        
-        let process = Process()
-        let outputPipe = Pipe()
-        
-        process.executableURL = URL(fileURLWithPath: "/bin/\(settings.shell)")
-        process.arguments = ["-c", command.command]
-        process.standardOutput = outputPipe
-        process.standardError = outputPipe
+        wasInterrupted = false
 
-        // Asynchronously read the output
-        outputPipe.fileHandleForReading.readabilityHandler = { fileHandle in
-            let data = fileHandle.availableData
-            if let newOutput = String(data: data, encoding: .utf8) {
-                DispatchQueue.main.async {
-                    self.output += newOutput
+        // One pipe for both stdout and stderr
+        var fds: [Int32] = [0, 0]
+        guard pipe(&fds) == 0 else {
+            reportError("Failed to run command: could not create pipe (\(String(cString: strerror(errno))))")
+            return
+        }
+
+        var fileActions: posix_spawn_file_actions_t? = nil
+        var attributes: posix_spawnattr_t? = nil
+        var defaultSignals = sigset_t()
+        sigfillset(&defaultSignals)
+        var noBlockedSignals = sigset_t()
+        sigemptyset(&noBlockedSignals)
+        // Own process group so Stop can signal the shell and every child it spawned.
+        // CLOEXEC_DEFAULT keeps the app's other descriptors out of the child.
+        let setupResults: [Int32] = [
+            posix_spawn_file_actions_init(&fileActions),
+            posix_spawn_file_actions_addopen(&fileActions, STDIN_FILENO, "/dev/null", O_RDONLY, 0),
+            posix_spawn_file_actions_adddup2(&fileActions, fds[1], STDOUT_FILENO),
+            posix_spawn_file_actions_adddup2(&fileActions, fds[1], STDERR_FILENO),
+            posix_spawn_file_actions_addclose(&fileActions, fds[0]),
+            posix_spawn_file_actions_addclose(&fileActions, fds[1]),
+            posix_spawnattr_init(&attributes),
+            posix_spawnattr_setsigdefault(&attributes, &defaultSignals),
+            posix_spawnattr_setsigmask(&attributes, &noBlockedSignals),
+            posix_spawnattr_setpgroup(&attributes, 0),
+            posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP | POSIX_SPAWN_CLOEXEC_DEFAULT | POSIX_SPAWN_SETSIGDEF | POSIX_SPAWN_SETSIGMASK)),
+        ]
+        defer {
+            posix_spawn_file_actions_destroy(&fileActions)
+            posix_spawnattr_destroy(&attributes)
+        }
+        if let setupError = setupResults.first(where: { $0 != 0 }) {
+            close(fds[0])
+            close(fds[1])
+            reportError("Failed to run command: could not prepare process (\(String(cString: strerror(setupError))))")
+            return
+        }
+
+        let shellPath = "/bin/\(settings.shell)"
+        let argv: [UnsafeMutablePointer<CChar>?] = [shellPath, "-c", command.command].map { strdup($0) } + [nil]
+        defer { argv.forEach { free($0) } }
+
+        var pid: pid_t = 0
+        let spawnResult = posix_spawn(&pid, shellPath, &fileActions, &attributes, argv, environ)
+        close(fds[1])
+        guard spawnResult == 0 else {
+            close(fds[0])
+            reportError("Failed to run command: \(String(cString: strerror(spawnResult)))")
+            return
+        }
+
+        let readHandle = FileHandle(fileDescriptor: fds[0], closeOnDealloc: true)
+        let manager = dataManager
+        let finished = DispatchGroup()
+        finished.enter() // pipe drained to EOF
+        finished.enter() // shell reaped
+        isRunning = true
+        runningPid = pid
+        runFinished = finished
+
+        // Read until EOF so the tail of the output is never dropped. Text is handed to the
+        // main thread at most every 100ms so a flood of output cannot starve the UI (and Stop).
+        let batcher = OutputBatcher()
+        DispatchQueue.global(qos: .userInitiated).async {
+            var pending = Data()
+            while true {
+                let chunk: Data
+                do {
+                    chunk = try readHandle.read(upToCount: 64 * 1024) ?? Data()
+                } catch {
+                    let errorMessage = "Failed to read command output: \(error.localizedDescription)"
+                    DispatchQueue.main.async {
+                        manager.latestError = errorMessage
+                        self.output += "\n" + errorMessage
+                    }
+                    break
+                }
+                if chunk.isEmpty { break }
+                pending.append(chunk)
+                if batcher.append(Self.decodeUTF8Prefix(&pending)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.appendOutput(batcher.take())
+                    }
                 }
             }
-        }
-
-        // Process termination handler
-        process.terminationHandler = { _ in
-            DispatchQueue.main.async {
-                self.isRunning = false
-                // Ensure all output is read
-                outputPipe.fileHandleForReading.readabilityHandler = nil
+            _ = batcher.append(String(decoding: pending, as: UTF8.self))
+            // Scheduled after any pending flush, so the final text lands before [interrupted]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.appendOutput(batcher.take())
+                finished.leave()
             }
         }
 
-        do {
-            try process.run()
-        } catch {
-            let errorMessage = "Failed to run command: \(error.localizedDescription)"
-            DispatchQueue.main.async {
-                self.dataManager.latestError = errorMessage
-                self.output = errorMessage
+        DispatchQueue.global(qos: .utility).async {
+            var status: Int32 = 0
+            while waitpid(pid, &status, 0) == -1 && errno == EINTR {}
+            finished.leave()
+        }
+
+        finished.notify(queue: .main) {
+            if self.wasInterrupted {
+                self.output += (self.output.isEmpty || self.output.hasSuffix("\n") ? "" : "\n") + "[interrupted]"
             }
             self.isRunning = false
+            self.runningPid = nil
+            self.runFinished = nil
+        }
+    }
+
+    private func stopCommand() {
+        guard let pid = runningPid, let finished = runFinished else { return }
+        wasInterrupted = true
+        let manager = dataManager
+        // ESRCH means the group already exited, which is not a failure
+        if killpg(pid, SIGTERM) != 0 && errno != ESRCH {
+            reportError("Failed to stop command: \(String(cString: strerror(errno)))")
+        }
+        // Escalate if the run is still alive (shell not reaped, so its pid cannot be reused)
+        // or any group member survived, e.g. a background job that ignores SIGTERM and does
+        // not hold the pipe. A live member keeps the group id reserved, so neither check can
+        // hit an unrelated process. The decision uses only captured values, so it still fires
+        // when the row was deleted mid-run (the output write then has no effect).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            guard finished.wait(timeout: .now()) == .timedOut || killpg(pid, 0) == 0 else { return }
+            if killpg(pid, SIGKILL) != 0 && errno != ESRCH {
+                let errorMessage = "Failed to force-stop command: \(String(cString: strerror(errno)))"
+                manager.latestError = errorMessage
+                self.output += "\n" + errorMessage
+            }
+        }
+    }
+
+    // Appends command output, keeping only the most recent part so layout stays fast
+    private func appendOutput(_ text: String) {
+        guard !text.isEmpty else { return }
+        output += text
+        guard output.utf8.count > Self.maxOutputBytes else { return }
+        // Keep the last maxOutputBytes/4 characters (under the cap even for 3-byte characters,
+        // so it doesn't re-trim on every append), starting at a line boundary when there is one
+        let cut = output.index(output.endIndex, offsetBy: -(Self.maxOutputBytes / 4), limitedBy: output.startIndex) ?? output.startIndex
+        let start = output[cut...].firstIndex(of: "\n").map { output.index(after: $0) } ?? cut
+        output = "[earlier output truncated]\n" + output[start...]
+    }
+
+    private static let maxOutputBytes = 256 * 1024
+
+    private func reportError(_ message: String) {
+        dataManager.latestError = message
+        output += (output.isEmpty ? "" : "\n") + message
+    }
+
+    // Decodes the longest valid UTF-8 prefix and leaves an incomplete trailing
+    // character (at most 3 bytes) in `data` for the next chunk.
+    nonisolated private static func decodeUTF8Prefix(_ data: inout Data) -> String {
+        for trailing in 0...min(3, data.count) {
+            if let text = String(data: data.prefix(data.count - trailing), encoding: .utf8) {
+                data = Data(data.suffix(trailing))
+                return text
+            }
+        }
+        // Genuinely invalid bytes: decode with replacement characters instead of dropping them
+        let text = String(decoding: data, as: UTF8.self)
+        data.removeAll()
+        return text
+    }
+}
+
+// Collects output on the reader thread so the main thread receives it in batches
+private final class OutputBatcher: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending = ""
+    private var flushScheduled = false
+
+    // Returns true when the caller should schedule a flush
+    func append(_ text: String) -> Bool {
+        lock.withLock {
+            pending += text
+            guard !flushScheduled else { return false }
+            flushScheduled = true
+            return true
+        }
+    }
+
+    func take() -> String {
+        lock.withLock {
+            flushScheduled = false
+            defer { pending = "" }
+            return pending
         }
     }
 }

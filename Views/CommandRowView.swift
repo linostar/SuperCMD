@@ -275,7 +275,9 @@ struct CommandRowView: View {
         runningPid = pid
         runFinished = finished
 
-        // Read until EOF so the tail of the output is never dropped
+        // Read until EOF so the tail of the output is never dropped. Text is handed to the
+        // main thread at most every 100ms so a flood of output cannot starve the UI (and Stop).
+        let batcher = OutputBatcher()
         DispatchQueue.global(qos: .userInitiated).async {
             var pending = Data()
             while true {
@@ -292,14 +294,16 @@ struct CommandRowView: View {
                 }
                 if chunk.isEmpty { break }
                 pending.append(chunk)
-                let text = Self.decodeUTF8Prefix(&pending)
-                DispatchQueue.main.async {
-                    self.output += text
+                if batcher.append(Self.decodeUTF8Prefix(&pending)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.appendOutput(batcher.take())
+                    }
                 }
             }
-            let tail = String(decoding: pending, as: UTF8.self)
-            DispatchQueue.main.async {
-                self.output += tail
+            _ = batcher.append(String(decoding: pending, as: UTF8.self))
+            // Scheduled after any pending flush, so the final text lands before [interrupted]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.appendOutput(batcher.take())
                 finished.leave()
             }
         }
@@ -328,11 +332,13 @@ struct CommandRowView: View {
         if killpg(pid, SIGTERM) != 0 && errno != ESRCH {
             reportError("Failed to stop command: \(String(cString: strerror(errno)))")
         }
-        // Escalate if this run is still alive. Until the run finishes the shell is not
-        // reaped, so its pid (the group id) cannot have been reused by another process.
-        // Captures no view state, so it still fires when the row was deleted mid-run.
+        // Escalate if the run is still alive (shell not reaped, so its pid cannot be reused)
+        // or any group member survived, e.g. a background job that ignores SIGTERM and does
+        // not hold the pipe. A live member keeps the group id reserved, so neither check can
+        // hit an unrelated process. The decision uses only captured values, so it still fires
+        // when the row was deleted mid-run (the output write then has no effect).
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            guard finished.wait(timeout: .now()) == .timedOut else { return }
+            guard finished.wait(timeout: .now()) == .timedOut || killpg(pid, 0) == 0 else { return }
             if killpg(pid, SIGKILL) != 0 && errno != ESRCH {
                 let errorMessage = "Failed to force-stop command: \(String(cString: strerror(errno)))"
                 manager.latestError = errorMessage
@@ -340,6 +346,20 @@ struct CommandRowView: View {
             }
         }
     }
+
+    // Appends command output, keeping only the most recent part so layout stays fast
+    private func appendOutput(_ text: String) {
+        guard !text.isEmpty else { return }
+        output += text
+        guard output.utf8.count > Self.maxOutputBytes else { return }
+        // Keep the last maxOutputBytes/4 characters (under the cap even for 3-byte characters,
+        // so it doesn't re-trim on every append), starting at a line boundary when there is one
+        let cut = output.index(output.endIndex, offsetBy: -(Self.maxOutputBytes / 4), limitedBy: output.startIndex) ?? output.startIndex
+        let start = output[cut...].firstIndex(of: "\n").map { output.index(after: $0) } ?? cut
+        output = "[earlier output truncated]\n" + output[start...]
+    }
+
+    private static let maxOutputBytes = 256 * 1024
 
     private func reportError(_ message: String) {
         dataManager.latestError = message
@@ -359,6 +379,31 @@ struct CommandRowView: View {
         let text = String(decoding: data, as: UTF8.self)
         data.removeAll()
         return text
+    }
+}
+
+// Collects output on the reader thread so the main thread receives it in batches
+private final class OutputBatcher: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending = ""
+    private var flushScheduled = false
+
+    // Returns true when the caller should schedule a flush
+    func append(_ text: String) -> Bool {
+        lock.withLock {
+            pending += text
+            guard !flushScheduled else { return false }
+            flushScheduled = true
+            return true
+        }
+    }
+
+    func take() -> String {
+        lock.withLock {
+            flushScheduled = false
+            defer { pending = "" }
+            return pending
+        }
     }
 }
 

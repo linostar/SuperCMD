@@ -8,16 +8,17 @@ A hung command currently locks its row: the Run button is disabled while running
 2. Stop sends SIGTERM to the command's entire process group (the shell and every child it spawned, including pipelines); if the group is still alive after 2 seconds, SIGKILL is sent to the group.
 3. After the command exits (normally or via Stop), isRunning is false, the button shows the play icon again, and pressing it reruns the command in the same row.
 4. Output printed before the stop stays visible and a final line "[interrupted]" is appended when the exit was caused by Stop.
-5. All remaining pipe output is drained before the readability handler is removed, so the tail of the output is never dropped on normal exit or on Stop.
+5. The output pipe is read until EOF before the run is considered finished, so the tail of the output is never dropped on normal exit or on Stop.
 6. Output chunks are decoded without dropping data when a multi-byte UTF-8 character is split across reads.
 7. When the output panel is visible and the command is not running, a separate chevron button collapses it (preserving the existing collapse ability now that the main button is Run/Stop).
 8. Deleting a row whose command is running stops that command's process group before the row is removed.
 9. If spawning or signalling fails, the error is shown in the row output and via dataManager.latestError (no silent failure).
 10. The Run/Stop and collapse buttons are keyboard-focusable and have accessibility labels ("Run <name>", "Stop <name>", "Hide output").
 11. The project builds with zero errors and zero new warnings.
+12. Heavy output (e.g. `yes`) never freezes the UI: output reaches the main thread in batches at most every 100ms and is capped at 256 KB, keeping the most recent part behind an "[earlier output truncated]" line, so Stop stays clickable.
 
 ## Approach
-All changes live in Views/CommandRowView.swift. Foundation's Process cannot place the child in its own process group, so terminate() would only signal the shell and orphan its children; replace it with posix_spawn using POSIX_SPAWN_SETPGROUP (pgid = child pid) so killpg reaches the whole tree. Keep the shell invocation identical (/bin/<shell> -c <command>), stdout and stderr on one pipe read via FileHandle, and observe exit with a DispatchSource process source plus waitpid. Row state gains the running pid and a wasInterrupted flag; the SIGKILL escalation is a 2-second DispatchQueue.main.asyncAfter that only fires if that same pid is still the running one.
+All changes live in Views/CommandRowView.swift. Foundation's Process cannot place the child in its own process group, so terminate() would only signal the shell and orphan its children; replace it with posix_spawn using POSIX_SPAWN_SETPGROUP (pgid = child pid) so killpg reaches the whole tree. Keep the shell invocation identical (/bin/<shell> -c <command>), stdout and stderr on one pipe read via FileHandle, read on a background thread until EOF, and reap the shell with a blocking waitpid on a second background thread; a per-run DispatchGroup completes when both are done. Row state gains the running pid, that DispatchGroup and a wasInterrupted flag. The SIGKILL escalation is a 2-second DispatchQueue.main.asyncAfter that fires if the run has not finished or any process in the group is still alive (killpg(pid, 0)); either condition guarantees the group id has not been reused. Output is batched to the main thread every 100ms and capped at 256 KB.
 
 ## Steps
 1. Add row state for the running pid and wasInterrupted; replace Process in runCommand() with posix_spawn (SETPGROUP, one pipe for stdout/stderr) and a process-exit DispatchSource that reaps with waitpid.
@@ -34,5 +35,6 @@ All changes live in Views/CommandRowView.swift. Foundation's Process cannot plac
 - Kill running commands when the menu window closes or the app quits.
 - A process that leaves the group (setsid/daemon) but keeps the output pipe open leaves the row "running"; Stop cannot reach it. Needs a separate "detach" path.
 - Pin GRDB to a version range instead of branch = master (forces a full-history clone and floats on upstream changes).
+- Show the exit code (e.g. "[exit 1]") when a command exits non-zero without being stopped.
 
 Last revised: 2026-10-14

@@ -65,19 +65,6 @@ struct CommandRowView: View {
                 .foregroundColor(isConfirmingDelete ? Color.black : Color.green)
                 .background(isConfirmingDelete ? Color.green : Color.clear)
                 .cornerRadius(4)
-                
-                // Collapse Output Button
-                if showingOutput && !isRunning {
-                    Button(action: {
-                        confirmingDeleteCommandId = nil // Reset confirmation on any action
-                        showingOutput = false
-                    }) {
-                        Image(systemName: "chevron.down.circle.fill")
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .foregroundColor(.green)
-                    .accessibilityLabel("Hide output")
-                }
 
                 // Run / Stop Button
                 Button(action: {
@@ -94,6 +81,19 @@ struct CommandRowView: View {
                 .buttonStyle(PlainButtonStyle())
                 .foregroundColor(.green)
                 .accessibilityLabel(isRunning ? "Stop \(command.name)" : "Run \(command.name)")
+
+                // Collapse Output Button
+                if showingOutput && !isRunning {
+                    Button(action: {
+                        confirmingDeleteCommandId = nil // Reset confirmation on any action
+                        showingOutput = false
+                    }) {
+                        Image(systemName: "chevron.down.circle.fill")
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.green)
+                    .accessibilityLabel("Hide output")
+                }
             }
             
             // Inline Edit Form
